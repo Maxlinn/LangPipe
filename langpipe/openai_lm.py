@@ -2,6 +2,7 @@ import sys
 import importlib
 import time
 import json
+from typing import List
 from dataclasses import dataclass
 
 @dataclass
@@ -37,7 +38,7 @@ class ChatGPTForConvLM:
                  conv:list,
                  system:str='',
                  **kwargs
-                 ):
+                 )->List[str]:
         messages = []
         if system:
             messages.append({'role': 'system', 'content': system})
@@ -57,7 +58,7 @@ class ChatGPTForConvLM:
         self.config.prompt_tokens += response['usage']['prompt_tokens']
         self.config.total_tokens += response['usage']['total_tokens']
         
-        ret = []
+        replys = []
         for choice in response['choices']:
             reason = choice['finish_reason']
             # skip abnormal completion
@@ -66,9 +67,9 @@ class ChatGPTForConvLM:
 
             # index = choice['index']
             content = choice['message']['content']
-            ret.append(content)
+            replys.append(content)
         
-        return ret
+        return replys
     
     
     def generate_retry(self,
