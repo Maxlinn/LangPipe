@@ -19,6 +19,11 @@ class Prompt(AbstractPrompt):
     def __str__(self) -> str:
         return self.prompt
     
+    @staticmethod
+    def from_prompts(*prompts, delimiter='\n\n'):
+        prompts = list(map(str, prompts))
+        return delimiter.join(prompts)
+    
 
 class RolePrompt(AbstractPrompt):
     
@@ -48,12 +53,13 @@ class FewShotPrompt(AbstractPrompt):
 
     def __str__(self) -> str:
         if len(self.examples) == 1:
-            s = 'Here is an exmaple:\n'
+            prompt = 'Here is an exmaple:\n'
         else:
-            s = 'Here are some examples:\n'
-            example_strs = [f'Example {i+1}: {example}' for i, example in enumerate(self.examples)]
-            s += '\n'.join(example_strs)
-        return s
+            prompt = 'Here are some examples:\n'
+            examples_s = [f'example {i+1}: {example}' 
+                          for i, example in enumerate(self.examples)]
+            prompt += '\n'.join(examples_s)
+        return prompt
 
 
 class NoOtherWordsPrompt(AbstractPrompt):
@@ -78,7 +84,7 @@ class RequestDictPrompt(AbstractPrompt):
         super().__init__()
         if descs is not None:
             assert len(keys) == len(descs), 'descriptions should have same length as keys.'
-        assert count > 0 or count == -1, 'count can be greater than zero or -1(best effort)'
+        assert count > 0 or count == -1, 'count can be greater than zero or -1(as more as gpt can)'
         
         self.keys = keys
         self.descs = descs
@@ -86,25 +92,25 @@ class RequestDictPrompt(AbstractPrompt):
         
         
     def __str__(self):
-        s :str = 'Your reply should be in key: value manner.'
+        prompt = 'Your reply should be in key: value manner.'
         
         if self.count:
-            s += ' When return multiple occurences, add a newline between occurences.'
-            if self.count == -1:
-                s += ' Reply as much occurences as you can.'
+            prompt += ' When return multiple occurences, add a newline between occurences.'
+            if self.count != -1:
+                prompt += f' Reply {self.count} occurences.'
             else:
-                s += f' Reply {self.count} occurences.'
+                prompt += ' Reply as much occurences as you can.'
         
+        # no key descriptions, gpt will guess from the key names
         if self.descs is None:
-            key_strs = ', '.join(self.keys)
-            s += f' The keys are as follows: {key_strs}.'
+            keys_s = ', '.join(self.keys)
+            prompt += f' The keys are as follows: {keys_s}.'
         else:
-            s += ' The keys and their descriptions are as following:\n'
+            prompt += ' The keys and their descriptions are as following:\n'
             
-            k_desc_strs = ['{key}: {desc}'.format(
-                                key=key,
-                                desc = desc if desc else '[description not provided]'
-                            ) 
-                           for key, desc in zip(self.keys, self.descs)]
-            s += '\n'.join(k_desc_strs)
+            k_descs_s = []
+            for key, desc in zip(self.keys, self.descs):
+                desc = desc if desc else '[description not provided]'
+                k_descs_s.append(f'{key}: {desc}')
+            s += '\n'.join(k_descs_s)
         return s
